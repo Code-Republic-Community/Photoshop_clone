@@ -1,0 +1,13 @@
+<RCC>
+    <qresource prefix="/new/prefix1">
+        <file>Marquee tool.png</file>
+        <file>Lasso tool.png</file>
+        <file>Crop tool.png</file>
+        <file>Eyedropper tool.png</file>
+        <file>Brush tool.png</file>
+        <file>Eraser tool.png</file>
+        <file>Type tool.png</file>
+        <file>Move tool.png</file>
+        <file>Converting image format.png</file>
+    </qresource>
+</RCC>
