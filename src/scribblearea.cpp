@@ -2,6 +2,7 @@
 
 #include "scribblearea.h"
 
+bool ScribbleArea::draw_access = false;
 
 ScribbleArea::ScribbleArea(QWidget *parent) : _widget{new QWidget(parent)}
 {
@@ -82,7 +83,7 @@ void ScribbleArea::mousePressEvent(QMouseEvent *event)
 
 void ScribbleArea::mouseMoveEvent(QMouseEvent *event)
 {
-    if((event->buttons() & Qt::LeftButton) && _scribbling)
+    if((event->buttons() & Qt::LeftButton) && _scribbling && draw_access)
     {
         draw_to_line(event->pos());
     }
@@ -90,7 +91,7 @@ void ScribbleArea::mouseMoveEvent(QMouseEvent *event)
 
 void ScribbleArea::mouseReleaseEvent(QMouseEvent *event)
 {
-    if((event->button() & Qt::LeftButton) && _scribbling)
+    if((event->button() & Qt::LeftButton) && _scribbling && draw_access)
     {
         draw_to_line(event->pos());
         _scribbling = false;

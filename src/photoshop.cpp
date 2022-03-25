@@ -16,7 +16,6 @@ Photoshop::Photoshop(QWidget *parent)
     , ui(new Ui::Photoshop)
 {
     ui->setupUi(this);
-
     _scribbleArea = new ScribbleArea;
     _is_action_open = false;
     _create_menu_bar();
@@ -24,7 +23,6 @@ Photoshop::Photoshop(QWidget *parent)
     _create_tool_tip_names();
     _create_tools_connections();
     _merge_layouts();
-
 }
 
 void Photoshop::_menu_names()
@@ -118,22 +116,32 @@ void Photoshop::action_open()
 
 void Photoshop::action_raw_camera()
 {
-    std::string file_name{"capture"};
+    const std::string file_name{"Capture"};
     cv::VideoCapture _cap(CAMERA_ID);
-    _cap.set(cv::CAP_PROP_FRAME_WIDTH, 600);
-    _cap.set(cv::CAP_PROP_FRAME_HEIGHT, 800);
+    cv::Mat tmp_img;
+    const int width = 400;
+    const int height = 300;
+    _cap.set(cv::CAP_PROP_FRAME_WIDTH, width);
+    _cap.set(cv::CAP_PROP_FRAME_HEIGHT, height);
     while(1)
     {
-        _cap >> _image;
-        cv::imshow("Capture", _image);
-        if(cv::waitKey(1) % 255 == 13)
+        _cap >> tmp_img;
+        cv::imshow(file_name, tmp_img);
+        if(13 == cv::waitKey(1) % 255)
         {
-            cv::imwrite(file_name + ".png", _image);
+            cv::imwrite(file_name + ".png", tmp_img);
             _cap.release();
-            cv::destroyWindow("Capture");
+            cv::destroyWindow(file_name);
             break;
         }
+        if(32 == cv::waitKey(1) % 255)
+        {
+            _cap.release();
+            cv::destroyWindow(file_name);
+            return;
+        }
     }
+    cv::resize(tmp_img, _image, cv::Size(800, 600));
     _scribbleArea->open_image(&_image);
 }
 
@@ -144,7 +152,7 @@ void Photoshop::action_save()
    {
        QByteArray name;
        name += _ext_name->completeSuffix();
-        save_file(name);
+       save_file(name);
    }
 }
 
@@ -288,7 +296,6 @@ void Photoshop::_create_menu_connections()
     for(int i = _meta_info[0]; i < _meta_info[1]; ++i)
     {
         if(4 == i) { _menubar[0]->addMenu(_save_as_menu); }
-
         _actions.push_back(new QAction(_names[i]));
         _menubar.at(_meta_info[2])->addAction(_actions[i]);
         connect(_actions[i], &QAction::triggered, this, _functions[i]);
@@ -306,7 +313,11 @@ void Photoshop::_create_actions_optional()
     _pen_width_act = new QAction(tr("&Pen Width"), this);
     connect(_pen_width_act, &QAction::triggered, this, &Photoshop::action_pen_width);
 
+    _paint = new QAction(tr("&Paint"), this);
+    connect(_paint, &QAction::triggered, this, &Photoshop::action_paint);
+
     _brush_tool_menu = new QMenu(tr("&Brush tool"));
+    _brush_tool_menu->addAction(_paint);
     _brush_tool_menu->addAction(_pen_color_act);
     _brush_tool_menu->addAction(_pen_width_act);
 }
@@ -446,6 +457,7 @@ bool Photoshop::save_file(const QByteArray &file_format)
 
 void Photoshop::_merge_layouts()
 {
+    _scribbleArea = new ScribbleArea;
     _horizonal = new QHBoxLayout(ui->centralwidget);
     _horizonal->addLayout(_left_menu);
     _horizonal->addWidget(_scribbleArea);
@@ -473,7 +485,11 @@ void Photoshop::_create_tools()
         _tools[i]->setFixedSize(QSize(41, 30));
         _left_menu->addWidget(_tools[i]);
     }
-    _tools[5]->setMenu(_brush_tool_menu);
+    _tools[0]->setMenu(_brush_tool_menu);
+}
+void Photoshop::action_paint()
+{
+    ScribbleArea::draw_access = true;
 }
 
 void Photoshop::_create_tools_connections()
