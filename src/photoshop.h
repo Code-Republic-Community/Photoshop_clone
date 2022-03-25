@@ -4,7 +4,6 @@
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
-#include <opencv2/imgcodecs.hpp>
 
 #include <QMainWindow>
 #include <QMenuBar>
@@ -72,6 +71,7 @@ private:
     QMenu *_brush_tool_menu;
     QAction *_pen_color_act;
     QAction *_pen_width_act;
+    QAction *_paint;
     QDialog *_dialog;
     TextEditor *_editor;
     QTextEdit *_text;
@@ -106,6 +106,7 @@ private slots:
     void action_image_rotation();
     void action_crop();
 /* Paint slots */
+    void action_paint();
     void action_pen_color();
     void action_pen_width();
 /* Filter slots */

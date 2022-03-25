@@ -50,6 +50,8 @@ private:
     int _my_pen_width;
     QImage _image;
     cv::Mat _cv_image;
+public:
+    static bool draw_access;
 };
 
 #endif // SCRIBBLEAREA_H
