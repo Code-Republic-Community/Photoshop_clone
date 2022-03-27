@@ -99,15 +99,17 @@ void Photoshop::action_new()
 
 void Photoshop::action_open()
 {
+    cv::Mat temp_img;
     QString file_name = "";
     if(maybe_save())
     {
       file_name = QFileDialog::getOpenFileName(this,
               tr("Open File"), QDir::homePath());
-      _image = cv::imread(file_name.toUtf8().constData());
+      temp_img = cv::imread(file_name.toUtf8().constData());
       if(!file_name.isEmpty())
        {
-           _scribbleArea->open_image(&_image);
+          cv::resize(temp_img, _image, cv::Size(800, 600));
+          _scribbleArea->open_image(&_image);
        }
     }
     _ext_name = new QFileInfo(file_name);
@@ -118,18 +120,18 @@ void Photoshop::action_raw_camera()
 {
     const std::string file_name{"Capture"};
     cv::VideoCapture _cap(CAMERA_ID);
-    cv::Mat tmp_img;
+    cv::Mat temp_img;
     const int width = 400;
     const int height = 300;
     _cap.set(cv::CAP_PROP_FRAME_WIDTH, width);
     _cap.set(cv::CAP_PROP_FRAME_HEIGHT, height);
     while(1)
     {
-        _cap >> tmp_img;
-        cv::imshow(file_name, tmp_img);
+        _cap >> temp_img;
+        cv::imshow(file_name, temp_img);
         if(13 == cv::waitKey(1) % 255)
         {
-            cv::imwrite(file_name + ".png", tmp_img);
+            cv::imwrite(file_name + ".png", temp_img);
             _cap.release();
             cv::destroyWindow(file_name);
             break;
@@ -141,7 +143,7 @@ void Photoshop::action_raw_camera()
             return;
         }
     }
-    cv::resize(tmp_img, _image, cv::Size(800, 600));
+    cv::resize(temp_img, _image, cv::Size(800, 600));
     _scribbleArea->open_image(&_image);
 }
 
@@ -151,7 +153,7 @@ void Photoshop::action_save()
    else
    {
        QByteArray name;
-       name += _ext_name->completeSuffix();
+       name += _ext_name->completeSuffix().toUtf8();
        save_file(name);
    }
 }
@@ -283,10 +285,7 @@ void Photoshop::action_pen_width()
                                          , tr("Select pen width: ")
                                          , _scribbleArea->pen_width()
                                          , 1, 50, 1, &ok);
-    if(ok)
-    {
-        _scribbleArea->set_pen_width(new_width);
-    }
+    if(ok) { _scribbleArea->set_pen_width(new_width); }
 }
 
 /* Actions */
@@ -374,7 +373,8 @@ void Photoshop::_create_shortcuts()
     QByteArray arr;
     for(auto &elem : _actions)
     {
-        QString str = "Ctrl+"+ shortcuts_names[i];
+        QString str = "Ctrl+";
+        str += shortcuts_names[i];
         arr = (str).toLocal8Bit();
         elem->setShortcut(tr(arr.data()));
         ++i;
@@ -420,19 +420,13 @@ bool Photoshop::maybe_save()
 {
     if(_scribbleArea->is_modified())
     {
-        QMessageBox::StandardButton ret;
-        ret = QMessageBox::warning(this, tr("Scribble")
+        QMessageBox::StandardButton ret_r;
+        ret_r = QMessageBox::warning(this, tr("Scribble")
                                    , tr("The message has been modified.\n"
                                         "Do you want save your changes?")
                                    , QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel);
-        if(ret == QMessageBox::Save)
-        {
-            return save_file("png");
-        }
-        else if(ret == QMessageBox::Cancel)
-        {
-            return false;
-        }
+        if(ret_r == QMessageBox::Save) { return save_file("png"); }
+        else if(ret_r == QMessageBox::Cancel) { return false; }
     }
     return true;
 }
@@ -445,10 +439,7 @@ bool Photoshop::save_file(const QByteArray &file_format)
                            ,tr("%1 Files(*.%2);; All files(*)")
                            .arg(QString::fromLatin1(file_format.toUpper())
                            , QString::fromLatin1(file_format)));
-    if(file_name.isEmpty())
-    {
-        return false;
-    }
+    if(file_name.isEmpty()) { return false; }
     else
     {
         return _scribbleArea->save_image(file_name, file_format.constData());
