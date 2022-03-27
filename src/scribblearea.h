@@ -49,7 +49,7 @@ private:
     QPoint _last_point;
     int _my_pen_width;
     QImage _image;
-    cv::Mat _cv_image;
+    cv::Mat *_cv_image;
 public:
     static bool draw_access;
 };

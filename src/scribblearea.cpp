@@ -4,8 +4,12 @@
 
 bool ScribbleArea::draw_access = false;
 
-ScribbleArea::ScribbleArea(QWidget *parent) : _widget{new QWidget(parent)}
+ScribbleArea::ScribbleArea(QWidget *parent) : _widget{ new QWidget(parent) }
 {
+    QImage new_image(QSize(721, 576), QImage::Format_RGB888);
+    new_image.fill(qRgb(255, 255, 255));
+    _image = new_image;
+    _cv_image = new cv::Mat(QImageToCvMat(_image));
     _modified = false;
     _scribbling = false;
     _my_pen_width = 1;
@@ -14,20 +18,18 @@ ScribbleArea::ScribbleArea(QWidget *parent) : _widget{new QWidget(parent)}
 
 ScribbleArea::~ScribbleArea()
 {
+    delete _cv_image;
     delete _widget;
 }
 
 bool ScribbleArea::open_image(cv::Mat *image)
 {    
-    if(!image->data)
-    {
-        return false;
-    }
+    if(!image->data) { return false; }
 
-    cv::resize(*image, _cv_image, cv::Size(width(), height()));
+    cv::resize(*image, *_cv_image, cv::Size(width(), height()));
     _image = cvMatToQImage(*image);
-    update();
     _modified = true;
+    update();
     return true;
 }
 
@@ -37,7 +39,7 @@ void ScribbleArea::set_text(QTextEdit *text)
     painter.setPen(QPen(text->textColor()));
     painter.setFont(text->font());
     painter.drawText(_image.rect(), Qt::AlignCenter, text->toPlainText());
-    _cv_image = QImageToCvMat(_image);
+    *_cv_image = QImageToCvMat(_image).clone();
     _modified = true;
 }
 
@@ -50,26 +52,26 @@ bool ScribbleArea::save_image(const QString &file_name, const char *file_format)
         _modified = false;
         return true;
     }
-    else
-    {
-        return false;
-    }
+    else { return false; }
 }
 
 void ScribbleArea::set_pen_color(const QColor &new_color)
 {
     _my_pen_color = new_color;
+    draw_access = true;
 }
 
 void ScribbleArea::set_pen_width(int new_width)
 {
     _my_pen_width = new_width;
+    draw_access = true;
 }
 void ScribbleArea::clear_image()
 {
     _image.fill(qRgb(255, 255, 255));
-    _modified = true;
-    update();
+    _modified = false;
+    _cv_image->data = 0;
+     update();
 }
 
 void ScribbleArea::mousePressEvent(QMouseEvent *event)
@@ -78,6 +80,10 @@ void ScribbleArea::mousePressEvent(QMouseEvent *event)
     {
         _last_point = event->pos();
         _scribbling = true;
+    }
+    if(ScribbleArea::draw_access)
+    {
+        setCursor(Qt::CrossCursor);
     }
 }
 
@@ -107,16 +113,11 @@ void ScribbleArea::paintEvent(QPaintEvent *event)
 
 void ScribbleArea::resizeEvent(QResizeEvent *event)
 {
-    if(!_cv_image.data)
-    {
-        _cv_image = QImageToCvMat(_image);
-        // if image exists, resizeing fails "TBD".
-    }
     if(event->size() != _image.size())
     {
         resize_image(event->size());
+        update();
     }
-    update();
     QWidget::resizeEvent(event);
 }
 
@@ -133,20 +134,21 @@ void ScribbleArea::draw_to_line(const QPoint &end_point)
 
 void ScribbleArea::resize_image(const QSize &new_size)
 {
-    int c_width = _cv_image.rows;
-    int c_height = _cv_image.cols;
+    int c_width = _cv_image->rows;
+    int c_height = _cv_image->cols;
     if(c_width == new_size.width() && c_height == new_size.height()) { return; }
-
     int n_width = new_size.width() + 1;
-    int n_height = new_size.height() + 1;
-    cv::Mat resized_image;
-    QImage new_image(new_size, QImage::Format_ARGB32);
-    new_image.fill(qRgb(255, 255, 255));
-    if(_cv_image.data)
+    int n_height = new_size.height();
+    QImage new_image(new_size, QImage::Format_RGB888);
+    if(!_scribbling)
     {
-        cv::resize(_cv_image, resized_image, cv::Size(n_width, n_height));
-        new_image = cvMatToQImage(resized_image);
+        *_cv_image = QImageToCvMat(_image).clone();
+        _scribbling = true;
     }
+    new_image.fill(qRgb(255, 255, 255));
+    cv::Mat resized_image;
+    cv::resize(*_cv_image, resized_image, cv::Size(n_width, n_height));
+    new_image = cvMatToQImage(resized_image);
     _image = new_image;
 }
 
