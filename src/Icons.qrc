@@ -1,16 +1,17 @@
 <RCC>
-    <qresource prefix="/new/prefix1">
-        <file>Marquee tool.png</file>
-        <file>Lasso tool.png</file>
-        <file>Crop tool.png</file>
-        <file>Eyedropper tool.png</file>
-        <file>Brush tool.png</file>
-        <file>Eraser tool.png</file>
-        <file>Type tool.png</file>
-        <file>Move tool.png</file>
-        <file>Converting image format.png</file>
-        <file>paint.png</file>
-        <file>width.png</file>
-        <file>color.png</file>
+    <qresource prefix="/">
+        <file>Icons/color.png</file>
+        <file>Icons/Crop tool.png</file>
+        <file>Icons/Brush tool.png</file>
+        <file>Icons/Converting image format.png</file>
+        <file>Icons/Eraser tool.png</file>
+        <file>Icons/Eyedropper tool.png</file>
+        <file>Icons/Lasso tool.png</file>
+        <file>Icons/Marquee tool.png</file>
+        <file>Icons/Move tool.png</file>
+        <file>Icons/Options.png</file>
+        <file>Icons/paint.png</file>
+        <file>Icons/Type tool.png</file>
+        <file>Icons/width.png</file>
     </qresource>
 </RCC>
