@@ -3,8 +3,9 @@
 #include "scribblearea.h"
 
 bool ScribbleArea::draw_access = false;
+bool ScribbleArea::erase_access = false;
 
-ScribbleArea::ScribbleArea(QWidget *parent) : _widget{ new QWidget(parent) }
+ScribbleArea::ScribbleArea(QWidget */* parent */)
 {
     QImage new_image(QSize(721, 576), QImage::Format_RGB888);
     new_image.fill(qRgb(255, 255, 255));
@@ -19,13 +20,11 @@ ScribbleArea::ScribbleArea(QWidget *parent) : _widget{ new QWidget(parent) }
 ScribbleArea::~ScribbleArea()
 {
     delete _cv_image;
-    delete _widget;
 }
 
 bool ScribbleArea::open_image(cv::Mat *image)
-{    
+{
     if(!image->data) { return false; }
-
     cv::resize(*image, *_cv_image, cv::Size(width(), height()));
     _image = cvMatToQImage(*image);
     _modified = true;
@@ -41,6 +40,9 @@ void ScribbleArea::set_text(QTextEdit *text)
     painter.drawText(_image.rect(), Qt::AlignCenter, text->toPlainText());
     *_cv_image = QImageToCvMat(_image).clone();
     _modified = true;
+    erase_access = false;
+    draw_access = false;
+    setCursor(Qt::ArrowCursor);
 }
 
 bool ScribbleArea::save_image(const QString &file_name, const char *file_format)
@@ -59,39 +61,49 @@ void ScribbleArea::set_pen_color(const QColor &new_color)
 {
     _my_pen_color = new_color;
     draw_access = true;
+    erase_access = false;
 }
 
 void ScribbleArea::set_pen_width(int new_width)
 {
     _my_pen_width = new_width;
     draw_access = true;
+    erase_access = false;
 }
+
 void ScribbleArea::clear_image()
 {
     _image.fill(qRgb(255, 255, 255));
     _modified = false;
     _cv_image->data = 0;
-     update();
+    erase_access = false;
+    draw_access = false;
+    setCursor(Qt::ArrowCursor);
+    update();
 }
 
 void ScribbleArea::mousePressEvent(QMouseEvent *event)
 {
+
     if(event->button() == Qt::LeftButton)
     {
         _last_point = event->pos();
         _scribbling = true;
     }
-    if(ScribbleArea::draw_access)
-    {
-        setCursor(Qt::CrossCursor);
-    }
+    if(draw_access) { setCursor(Qt::CrossCursor); }
 }
 
 void ScribbleArea::mouseMoveEvent(QMouseEvent *event)
 {
+
     if((event->buttons() & Qt::LeftButton) && _scribbling && draw_access)
     {
         draw_to_line(event->pos());
+    }
+    if(erase_access)
+    {
+        QPixmap p(pen_width(), pen_width());
+        this->setCursor(p);
     }
 }
 
@@ -132,6 +144,18 @@ void ScribbleArea::draw_to_line(const QPoint &end_point)
     _last_point = end_point;
 }
 
+void ScribbleArea::erase()
+{
+    set_pen_color(qRgb(255, 255, 255));
+    bool ok;
+    int new_width = QInputDialog::getInt(this, tr("")
+                                         , tr("Select eraser width: ")
+                                         , pen_width()
+                                         , 5, 50, 1, &ok);
+   if(ok) { set_pen_width(new_width); }
+   erase_access = true;
+}
+
 void ScribbleArea::resize_image(const QSize &new_size)
 {
     int c_width = _cv_image->rows;
@@ -145,7 +169,6 @@ void ScribbleArea::resize_image(const QSize &new_size)
         *_cv_image = QImageToCvMat(_image).clone();
         _scribbling = true;
     }
-    new_image.fill(qRgb(255, 255, 255));
     cv::Mat resized_image;
     cv::resize(*_cv_image, resized_image, cv::Size(n_width, n_height));
     new_image = cvMatToQImage(resized_image);

@@ -21,13 +21,16 @@ public:
 
 protected:
      bool eventFilter(QObject *object, QEvent *event) override;
+
 private slots:
     void action_fonts();
     void action_color_pallette();
     void action_cancel();
     void action_ok();
+
 signals:
     void send_text();
+
 private:
     void _create_default_canvas();
     void _create_buttons();
@@ -37,7 +40,6 @@ private:
 
 private:
     bool _is_opened;
-
     QWidget *_widget;
     QTextEdit *_text_edit;
     QPushButton *_fonts;
@@ -47,7 +49,6 @@ private:
     QVBoxLayout *_vertical_layout;
     QHBoxLayout *_horizonal_layout;
     QSpacerItem *_horizonal_spacer;
-
 };
 
 #endif // TEXT_EDITOR_H

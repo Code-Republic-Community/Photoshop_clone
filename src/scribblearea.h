@@ -24,9 +24,11 @@ public:
     bool is_modified() const { return _modified; }
     QColor pen_color() const { return _my_pen_color; }
     int pen_width() const { return _my_pen_width; }
+    void erase();
 
 public slots:
     void clear_image();
+
 protected:
     void mousePressEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
@@ -34,13 +36,15 @@ protected:
     void paintEvent(QPaintEvent *event) override;
     void resizeEvent(QResizeEvent *event) override;
 
-
 private:
     void draw_to_line(const QPoint &end_point);
     void resize_image(const QSize &new_size);
     QImage cvMatToQImage(const cv::Mat &inMat);
     cv::Mat QImageToCvMat(const QImage &inImage, bool inCloneImageData = true);
 
+public:
+    static bool draw_access;
+    static bool erase_access;
 private:
     QWidget *_widget;
     bool _modified;
@@ -50,8 +54,6 @@ private:
     int _my_pen_width;
     QImage _image;
     cv::Mat *_cv_image;
-public:
-    static bool draw_access;
 };
 
 #endif // SCRIBBLEAREA_H

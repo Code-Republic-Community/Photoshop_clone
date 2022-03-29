@@ -25,27 +25,46 @@ Photoshop::Photoshop(QWidget *parent)
     _merge_layouts();
 }
 
+Photoshop::~Photoshop()
+{
+    _delete_file_actions();
+    _delete_save_as_action();
+    _delete_menues();
+    _delete_tools();
+    delete _pen_color_act;
+    delete _open_action;
+    delete _brush_tool_menu;
+    delete _save_as_menu;
+    delete _pen_width_act;
+    if(_is_action_open) { delete _ext_name; }
+    delete _editor;
+    delete _scribbleArea;
+    delete _left_menu;
+    delete _horizonal;
+    delete ui;
+}
+
 void Photoshop::_menu_names()
 {   /* Files */
     _names.push_back("&New...");
     _names.push_back("&Open...");
     _names.push_back("&Raw Camera");
     _names.push_back("&Save");
-    _names.push_back("Clear Screen");
     _names.push_back("&Print");
     _names.push_back("&Close");
     /* Edit */
     _names.push_back("&Undo");
-    _names.push_back("&Step Forward");
-    _names.push_back("&Step Backward");
+    _names.push_back("&Redo");
     _names.push_back("&Cut");
     _names.push_back("&Copy");
-    _names.push_back("&Past");
+    _names.push_back("&Paste");
+    _names.push_back("Clear Screen");
     _names.push_back("&Keyboard shortcuts");
     /* Image */
     _names.push_back("&Image Size");
     _names.push_back("&Canvas Size");
-    _names.push_back("&Image Rotation");
+    _names.push_back("&Rotate Left");
+    _names.push_back("&Rotate Right");
     _names.push_back("&Crop");
     /* Filter */
     _names.push_back("&Blur");
@@ -86,8 +105,9 @@ void Photoshop::_create_menu_bar()
     _create_menu_connections();
     _create_menu_Help();
     _create_menu_connections();
-    _create_actions_optional();
+    _create_brush_tool_optional();
 }
+
 /* File slots */
 void Photoshop::action_new()
 {
@@ -105,9 +125,9 @@ void Photoshop::action_open()
     {
       file_name = QFileDialog::getOpenFileName(this,
               tr("Open File"), QDir::homePath());
-      temp_img = cv::imread(file_name.toUtf8().constData());
       if(!file_name.isEmpty())
        {
+          temp_img = cv::imread(file_name.toUtf8().constData());
           cv::resize(temp_img, _image, cv::Size(800, 600));
           _scribbleArea->open_image(&_image);
        }
@@ -120,9 +140,10 @@ void Photoshop::action_raw_camera()
 {
     const std::string file_name{"Capture"};
     cv::VideoCapture _cap(CAMERA_ID);
-    cv::Mat temp_img;
     const int width = 400;
     const int height = 300;
+    cv::Mat temp_img(cv::Size(721, 576), CV_64FC1);
+
     _cap.set(cv::CAP_PROP_FRAME_WIDTH, width);
     _cap.set(cv::CAP_PROP_FRAME_HEIGHT, height);
     while(1)
@@ -165,11 +186,6 @@ void Photoshop::action_save_as()
     save_file(file_format);
 }
 
-void Photoshop::action_clear_screen()
-{
-    _scribbleArea->clear_image();
-}
-
 void Photoshop::action_print()
 {
     // in progress
@@ -181,20 +197,18 @@ void Photoshop::action_close()
         QApplication::quit();
     }
 }
+
 /* Edit slots */
 void Photoshop::action_undo()
 {
-    QMessageBox::information(this, "", "undo");
-}
-void Photoshop::action_step_forward()
-{
-    QMessageBox::information(this, "", "sForward");
 
 }
-void Photoshop::action_step_backward()
+
+void Photoshop::action_redo()
 {
-    QMessageBox::information(this, "", "sBackward");
+
 }
+
 void Photoshop::action_cut()
 {
     QMessageBox::information(this, "", "cut");
@@ -205,14 +219,20 @@ void Photoshop::action_copy()
     QMessageBox::information(this, "", "copy");
 
 }
-void Photoshop::action_past()
+void Photoshop::action_paste()
 {
     QMessageBox::information(this, "", "past");
 }
+void Photoshop::action_clear_screen()
+{
+    _scribbleArea->clear_image();
+}
+
 void Photoshop::action_keyboard_shortcuts()
 {
     QMessageBox::information(this, "", "keyboard_shortcuts");
 }
+
 /* Image slots */
 void Photoshop::action_image_size()
 {
@@ -222,14 +242,19 @@ void Photoshop::action_canvas_size()
 {
      QMessageBox::information(this, "", "canvas_size");
 }
-void Photoshop::action_image_rotation()
+void Photoshop::action_image_left_rotation()
 {
-     QMessageBox::information(this, "", "image_rotation");
+     QMessageBox::information(this, "", "image_left_rotation");
+}
+void Photoshop::action_image_right_rotation()
+{
+     QMessageBox::information(this, "", "image_right_rotation");
 }
 void Photoshop::action_crop()
 {
      QMessageBox::information(this, "", "crop");
 }
+
 /* Filter slots */
 void Photoshop::action_blur()
 {
@@ -250,6 +275,7 @@ void Photoshop::action_pixelate()
     QMessageBox::information(this, "", "Pixelate");
 
 }
+
 /* Help slots */
 void Photoshop::action_Photoshop_help()
 {
@@ -262,7 +288,6 @@ void Photoshop::action_system_info()
 }
 
 /* Drawing slots */
-
 void Photoshop::closeEvent(QCloseEvent *event)
 {
     if(maybe_save()) { event->accept(); }
@@ -289,7 +314,6 @@ void Photoshop::action_pen_width()
 }
 
 /* Actions */
-
 void Photoshop::_create_menu_connections()
 {
     for(int i = _meta_info[0]; i < _meta_info[1]; ++i)
@@ -299,26 +323,6 @@ void Photoshop::_create_menu_connections()
         _menubar.at(_meta_info[2])->addAction(_actions[i]);
         connect(_actions[i], &QAction::triggered, this, _functions[i]);
     }
-}
-
-void Photoshop::_create_actions_optional()
-{
-    _open_action = new QAction(tr("&Open"), this);
-    connect(_open_action, &QAction::triggered, this, &Photoshop::action_open);
-
-    _pen_color_act = new QAction(tr("&Pen Color..."), this);
-    connect(_pen_color_act, &QAction::triggered, this, &Photoshop::action_pen_color);
-
-    _pen_width_act = new QAction(tr("&Pen Width"), this);
-    connect(_pen_width_act, &QAction::triggered, this, &Photoshop::action_pen_width);
-
-    _paint = new QAction(tr("&Paint"), this);
-    connect(_paint, &QAction::triggered, this, &Photoshop::action_paint);
-
-    _brush_tool_menu = new QMenu(tr("&Brush tool"));
-    _brush_tool_menu->addAction(_paint);
-    _brush_tool_menu->addAction(_pen_color_act);
-    _brush_tool_menu->addAction(_pen_width_act);
 }
 
 /* Menu */
@@ -331,10 +335,12 @@ void Photoshop::_create_menu_File()
     _functions.push_back(&Photoshop::action_open);
     _functions.push_back(&Photoshop::action_raw_camera);
     _functions.push_back(&Photoshop::action_save);
-    _functions.push_back(&Photoshop::action_clear_screen);
     _functions.push_back(&Photoshop::action_print);
     _functions.push_back(&Photoshop::action_close);
     _meta_info[1] = _functions.size();
+
+    _open_action = new QAction(tr("&Open"), this);
+    connect(_open_action, &QAction::triggered, this, &Photoshop::action_open);
 
     foreach(QByteArray format, QImageWriter::supportedImageFormats())
     {
@@ -357,18 +363,18 @@ void Photoshop::_create_menu_Edit()
     _menubar.push_back(menuBar()->addMenu(tr("&Edit")));
     _meta_info[0] = _functions.size();
     _functions.push_back(&Photoshop::action_undo);
-    _functions.push_back(&Photoshop::action_step_forward);
-    _functions.push_back(&Photoshop::action_step_backward);
+    _functions.push_back(&Photoshop::action_redo);
     _functions.push_back(&Photoshop::action_cut);
     _functions.push_back(&Photoshop::action_copy);
-    _functions.push_back(&Photoshop::action_past);
+    _functions.push_back(&Photoshop::action_paste);
+    _functions.push_back(&Photoshop::action_clear_screen);
     _functions.push_back(&Photoshop::action_keyboard_shortcuts);
     _meta_info[1] = _functions.size();
 }
 
 void Photoshop::_create_shortcuts()
 {
-    QString shortcuts_names = {"NORSEPWZ><XCVKLJTYMBGFDI"};
+    QString shortcuts_names = {"NORSPWZZXCVELJTYMBGFDIKU"};
     char i = 0;
     QByteArray arr;
     for(auto &elem : _actions)
@@ -379,6 +385,7 @@ void Photoshop::_create_shortcuts()
         elem->setShortcut(tr(arr.data()));
         ++i;
     }
+    _actions[7]->setShortcut(tr("Ctrl+Shift+Z"));
 }
 
 void Photoshop::_create_menu_Image()
@@ -388,7 +395,8 @@ void Photoshop::_create_menu_Image()
     _meta_info[0] = _functions.size();
     _functions.push_back(&Photoshop::action_image_size);
     _functions.push_back(&Photoshop::action_canvas_size);
-    _functions.push_back(&Photoshop::action_image_rotation);
+    _functions.push_back(&Photoshop::action_image_left_rotation);
+    _functions.push_back(&Photoshop::action_image_right_rotation);
     _functions.push_back(&Photoshop::action_crop);
     _meta_info[1] = _functions.size();
 }
@@ -416,13 +424,12 @@ void Photoshop::_create_menu_Help()
 }
 
 bool Photoshop::maybe_save()
-
 {
     if(_scribbleArea->is_modified())
     {
         QMessageBox::StandardButton ret_r;
         ret_r = QMessageBox::warning(this, tr("Scribble")
-                                   , tr("The message has been modified.\n"
+                                   , tr("The program has been modified.\n"
                                         "Do you want save your changes?")
                                    , QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel);
         if(ret_r == QMessageBox::Save) { return save_file("png"); }
@@ -481,15 +488,46 @@ void Photoshop::_create_tools()
 void Photoshop::action_paint()
 {
     ScribbleArea::draw_access = true;
+    if(ScribbleArea::erase_access)
+    {
+       _scribbleArea->set_pen_color(QColor(0, 0, 0));
+       _scribbleArea->set_pen_width(1);
+       ScribbleArea::erase_access = false;
+    }
 }
+
+void Photoshop::_create_brush_tool_optional()
+{
+    _pen_color_act = new QAction(tr("&Pen Color..."), this);
+    _pen_color_act->setIcon(QIcon(":/new/prefix1/color.png"));
+    connect(_pen_color_act, &QAction::triggered, this, &Photoshop::action_pen_color);
+    _pen_width_act = new QAction(tr("&Pen Width"), this);
+    _pen_width_act->setIcon(QIcon(":/new/prefix1/width.png"));
+    connect(_pen_width_act, &QAction::triggered, this, &Photoshop::action_pen_width);
+    _paint = new QAction(tr("&Paint"), this);
+    _paint->setIcon(QIcon(":/new/prefix1/paint.png"));
+    connect(_paint, &QAction::triggered, this, &Photoshop::action_paint);
+    _brush_tool_menu = new QMenu(tr("&Brush tool"));
+    _brush_tool_menu->addAction(_paint);
+    _brush_tool_menu->addAction(_pen_color_act);
+    _brush_tool_menu->addAction(_pen_width_act);
+}
+
 
 void Photoshop::_create_tools_connections()
 {
-    connect(_tools[7], &QPushButton::clicked, this, &Photoshop::pushed_brush_button);
+    connect(_tools[6], &QPushButton::clicked, this, &Photoshop::pushed_button_erase_tool);
+    connect(_tools[7], &QPushButton::clicked, this, &Photoshop::pushed_button_type_tool);
 }
 
 /* Button slots */
-void Photoshop::pushed_brush_button()
+void Photoshop::pushed_button_erase_tool()
+{
+    ScribbleArea::draw_access = true;
+    _scribbleArea->erase();
+}
+
+void Photoshop::pushed_button_type_tool()
 {
     _editor = new TextEditor;
     connect(_editor, &TextEditor::send_text, this, &Photoshop::receive);
@@ -502,7 +540,6 @@ void Photoshop::receive()
 }
 
 /* Memory deallocation functionality */
-
 void Photoshop::_delete_menues()
 {
     for(auto it = _menubar.begin(); it != _menubar.end(); ++it)
@@ -533,29 +570,6 @@ void Photoshop::_delete_tools()
     {
         delete *it;
     }
-}
-
-/* Destructor */
-Photoshop::~Photoshop()
-{
-    _delete_file_actions();
-    _delete_save_as_action();
-    _delete_menues();
-    _delete_tools();
-
-
-    delete _pen_color_act;
-    delete _open_action;
-    delete _brush_tool_menu;
-    delete _save_as_menu;
-    delete _pen_width_act;
-    if(_is_action_open) { delete _ext_name; }
-//    delete _verticalSpacer;
-//    delete _left_menu;
-//    delete _horizonal;
-    delete _editor;
-    delete _scribbleArea;
-    delete ui;
 }
 
 

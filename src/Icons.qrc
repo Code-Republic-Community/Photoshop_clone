@@ -9,5 +9,8 @@
         <file>Type tool.png</file>
         <file>Move tool.png</file>
         <file>Converting image format.png</file>
+        <file>paint.png</file>
+        <file>width.png</file>
+        <file>color.png</file>
     </qresource>
 </RCC>
