@@ -468,7 +468,7 @@ void Photoshop::_upload_icons()
 {
     for(int i = 0; i < BUTTONS_COUNT; ++i)
     {
-        _tools_icons.push_back(":/new/prefix1/" + _tool_tips.at(i) + ".png");
+        _tools_icons.push_back("://Icons/" + _tool_tips.at(i) + ".png");
     }
 }
 
@@ -499,13 +499,13 @@ void Photoshop::action_paint()
 void Photoshop::_create_brush_tool_optional()
 {
     _pen_color_act = new QAction(tr("&Pen Color..."), this);
-    _pen_color_act->setIcon(QIcon(":/new/prefix1/color.png"));
+    _pen_color_act->setIcon(QIcon("://Icons/color.png"));
     connect(_pen_color_act, &QAction::triggered, this, &Photoshop::action_pen_color);
     _pen_width_act = new QAction(tr("&Pen Width"), this);
-    _pen_width_act->setIcon(QIcon(":/new/prefix1/width.png"));
+    _pen_width_act->setIcon(QIcon("://Icons/width.png"));
     connect(_pen_width_act, &QAction::triggered, this, &Photoshop::action_pen_width);
     _paint = new QAction(tr("&Paint"), this);
-    _paint->setIcon(QIcon(":/new/prefix1/paint.png"));
+    _paint->setIcon(QIcon("://Icons/paint.png"));
     connect(_paint, &QAction::triggered, this, &Photoshop::action_paint);
     _brush_tool_menu = new QMenu(tr("&Brush tool"));
     _brush_tool_menu->addAction(_paint);
