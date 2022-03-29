@@ -1,4 +1,4 @@
-#include "text_editor.h"
+    #include "text_editor.h"
 
 #include <QColor>
 #include <QColorDialog>
@@ -11,12 +11,17 @@
 TextEditor::TextEditor(QWidget *parent)
     : _widget {new QWidget(parent)}
 {
-
     _is_opened = false;
     _create_default_canvas();    
     _create_buttons();
     _create_design();
     _conections();
+}
+
+TextEditor::~TextEditor()
+{
+    if(_is_opened) { _deallocation(); }
+    if(_widget) { delete _widget; }
 }
 
 void TextEditor::_create_default_canvas()
@@ -118,13 +123,12 @@ void TextEditor::action_ok()
     _widget->close();
 }
 
-
 QTextEdit* TextEditor::get_text() const
 {
     return _text_edit;
 }
 
-/* Memory deallocation */
+/* Memory deallocation functionality*/
 void TextEditor::_deallocation()
 {
     delete _horizonal_layout;
@@ -137,11 +141,7 @@ void TextEditor::_deallocation()
     delete _text_edit;
 }
 
-TextEditor::~TextEditor()
-{
-    if(_is_opened) { _deallocation(); }
-    if(_widget) { delete _widget; }
-}
+
 
 
 
